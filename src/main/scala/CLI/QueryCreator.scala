@@ -54,7 +54,51 @@ object QueryCreator {
 
     // TODO: Query parsed to map in the form of graph/table: attribute. Time to translate in create SQL format.
     // NOTE: Dictionary is unordered so use graph_entries as order for joining tables in SQL query
-    " "
+
+    val final_string: String = map_to_string_query(graph_entries, resultMap, "", 0)
+    println(final_string)
+    final_string
+  }
+
+  def map_to_string_query(table_names: ListBuffer[String], relations: Map[String, List[String]], current_query: String, index: Int): String = {
+    if (index >= table_names.length) {
+      return current_query
+    }
+
+    var tmp: String = current_query
+
+    val first_table: String = table_names(index)
+
+    if (index + 1 == table_names.length) {
+      // build single table query
+      tmp += "SELECT\n"
+      for (param <- relations(first_table)) {
+        tmp += f"\t\"$first_table\".\"$param\" AS \"$param\"\n"
+      }
+      tmp += f"FROM $first_table"
+      println(tmp)
+    } else {
+      // build table pair
+      val second_table: String = table_names(index + 1)
+
+      tmp += "SELECT\n"
+
+      for (param <- relations(first_table)) {
+        tmp += f"\t\"$first_table\".\"$param\" AS \"$param\"\n"
+      }
+
+      for (param <- relations(second_table)) {
+        tmp += f"\t\"$second_table\".\"$param\" AS \"$param\"\n"
+      }
+
+      tmp += f"FROM $first_table\n"
+      tmp += f"LEFT JOIN $second_table ON $first_table.id = $second_table.id\n"
+
+      println(tmp)
+      map_to_string_query(table_names, relations, current_query, index + 2)
+      println(current_query)
+    }
+    current_query
   }
 
   def write_to_file(byte_query: String): Unit = {
